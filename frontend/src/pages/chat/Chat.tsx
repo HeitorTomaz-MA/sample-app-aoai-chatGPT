@@ -193,10 +193,10 @@ const Chat = () => {
       const secondPart = question[1];
       if (secondPart.type === "image_url") {
         questionContent = [firstPart, { type: "image_url", image_url: { url: secondPart.image_url.url } }];
-      } else if (secondPart.type === "file_url") {
-        questionContent = [firstPart, { type: "file_url", file_url: { url: secondPart.file_url.url, name: secondPart.file_url.name } }];
+      } else if (secondPart.type === "file") {
+        questionContent = [firstPart, { type: "file", file: { url: (secondPart as any).file.url, name: (secondPart as any).file.name } }];
       } else {
-        // Fallback or error handling if needed, though current types restrict to image_url or file_url
+        // Fallback or error handling if needed, though current types restrict to image_url or file
         questionContent = firstPart.text; 
       }
     }
@@ -335,8 +335,8 @@ const Chat = () => {
       const secondPart = question[1];
       if (secondPart.type === "image_url") {
         questionContentWithFile = [firstPart, { type: "image_url", image_url: { url: secondPart.image_url.url } }];
-      } else if (secondPart.type === "file_url") {
-        questionContentWithFile = [firstPart, { type: "file_url", file_url: { url: secondPart.file_url.url, name: secondPart.file_url.name } }];
+      } else if (secondPart.type === "file") {
+        questionContentWithFile = [firstPart, { type: "file", file: { url: (secondPart as any).file.url, name: (secondPart as any).file.name } }];
       } else {
         // Fallback or error handling if needed
         questionContentWithFile = firstPart.text;
@@ -845,9 +845,9 @@ const Chat = () => {
                                   alt="Uploaded Preview"
                                 />
                               )}
-                              {answer.content[1].type === "file_url" && (
+                              {answer.content[1].type === "file" && (
                                 <div className={styles.uploadedFileChat}>
-                                  Attached file: {answer.content[1].file_url.name}
+                                  Attached file: {answer.content[1].file.name}
                                 </div>
                               )}
                             </>

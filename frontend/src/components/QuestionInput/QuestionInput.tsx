@@ -20,6 +20,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
   const [question, setQuestion] = useState<string>('')
   const [base64File, setBase64File] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
@@ -36,9 +37,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
         alert(`File type not allowed. Please upload one of the following file types: ${allowedFileExtensions}`);
         // Clear the file input
         event.target.value = "";
+        setFileName(null);
+        setBase64File(null);
+        setSelectedFile(null);
         return;
       }
-
+      setSelectedFile(file);
       setFileName(file.name);
       await convertToBase64(file);
     }
@@ -61,21 +65,32 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       return
     }
 
-    const questionTest: ChatMessage["content"] = base64File && fileName ? [{ type: "text", text: question }, { type: "file_url", file_url: { url: base64File, name: fileName } }] : question.toString();
+    let fileContentPart: { type: "image_url"; image_url: { url: string } } | { type: "file_url"; file_url: { url: string; name: string } } | null = null;
 
-    if (conversationId && questionTest !== undefined) {
-      onSend(questionTest, conversationId)
-      setBase64File(null)
-      setFileName(null)
+    if (base64File && selectedFile && fileName) { // Ensure selectedFile and fileName are also checked
+      if (selectedFile.type.startsWith('image/')) {
+        fileContentPart = { type: "image_url", image_url: { url: base64File } };
+      } else {
+        fileContentPart = { type: "file", file: { url: base64File, name: fileName } };
+      }
+    }
+
+    const questionTextPart = { type: "text" as "text", text: question }; // Added "as text" for type consistency
+    const contentForRequest: ChatMessage["content"] = fileContentPart ? [questionTextPart, fileContentPart] : question.toString();
+
+
+    if (conversationId) {
+      onSend(contentForRequest, conversationId);
     } else {
-      onSend(questionTest)
-      setBase64File(null)
-      setFileName(null)
+      onSend(contentForRequest);
     }
 
     if (clearOnSend) {
-      setQuestion('')
+      setQuestion('');
     }
+    setBase64File(null);
+    setFileName(null);
+    setSelectedFile(null);
   }
 
   const onEnterPress = (ev: React.KeyboardEvent<Element>) => {
