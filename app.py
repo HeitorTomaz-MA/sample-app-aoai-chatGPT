@@ -1063,4 +1063,51 @@ async def generate_title(conversation_messages) -> str:
         return messages[-2]["content"]
 
 
+@bp.route("/api/upload_azure_openai_file", methods=["POST"])
+async def upload_azure_openai_file():
+    try:
+        files = await request.files
+        uploaded_file = files.get("file")
+
+        if not uploaded_file:
+            return jsonify({"error": "No file part in the request"}), 400
+        
+        if uploaded_file.filename == "":
+            return jsonify({"error": "No selected file"}), 400
+
+        azure_openai_client = await init_openai_client()
+        if not azure_openai_client:
+            # init_openai_client logs the error, so we just return a generic message
+            return jsonify({"error": "Failed to initialize Azure OpenAI client"}), 500
+
+        # The openai library's files.create expects a file-like object or a tuple.
+        # Quart's FileStorage object (uploaded_file) has a 'stream' attribute which is a SpooledTemporaryFile.
+        # We need to pass the bytes from this stream.
+        file_bytes = uploaded_file.stream.read()
+        
+        # Ensure filename is not None or empty for the tuple
+        filename_for_upload = uploaded_file.filename or "uploaded_file"
+
+        response = await azure_openai_client.files.create(
+            file=(filename_for_upload, file_bytes, uploaded_file.content_type),
+            purpose="assistants"  # As per OpenAI documentation for Assistants API
+        )
+
+        return jsonify({"file_id": response.id, "filename": response.filename}), 200
+
+    except Exception as e:
+        logging.error(f"Error uploading file to Azure OpenAI: {str(e)}")
+        # Check if the error object has specific attributes like 'status_code' or 'body' for more details
+        error_details = str(e)
+        status_code = 500
+        if hasattr(e, 'status_code'):
+            status_code = e.status_code
+        if hasattr(e, 'body') and e.body: # some openai errors have a body
+            error_details = e.body.get('error', {}).get('message', str(e))
+        elif hasattr(e, 'message'): # some openai errors have a message
+             error_details = e.message
+
+        return jsonify({"error": "Failed to upload file to Azure OpenAI", "details": error_details}), status_code
+
+
 app = create_app()

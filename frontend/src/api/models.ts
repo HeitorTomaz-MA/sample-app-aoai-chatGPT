@@ -44,7 +44,7 @@ export type ChatMessage = {
     { type: "text"; text: string },
     (
       | { type: "image_url"; image_url: { url: string } }
-      | { type: "file"; file: { url: string; name: string } }
+      | { type: "file"; file: { file_id: string; name?: string } }
     )
   ]
   end_turn?: boolean
