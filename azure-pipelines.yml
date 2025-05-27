@@ -1,0 +1,33 @@
+trigger:
+- main
+
+variables:
+  imageName: $(myimagename)  # <--- Substitua
+  dockerHubConnection: DockerHub                # <--- Nome da service connection
+  dockerfilePath: WebApp.Dockerfile                              # <--- Arquivo Dockerfile na raiz
+  tag: $(Build.BuildId)
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Docker@2
+  displayName: 'Fazer build da imagem Docker'
+  inputs:
+    command: build
+    repository: $(imageName)
+    dockerfile: $(dockerfilePath)
+    containerRegistry: $(dockerHubConnection)
+    tags: |
+      latest
+      $(tag)
+
+- task: Docker@2
+  displayName: 'Fazer push da imagem para o Docker Hub'
+  inputs:
+    command: push
+    repository: $(imageName)
+    containerRegistry: $(dockerHubConnection)
+    tags: |
+      latest
+      $(tag)
