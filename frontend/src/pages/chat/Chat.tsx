@@ -185,13 +185,28 @@ const Chat = () => {
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
-    const questionContent = typeof question === 'string' ? question : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
-    question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
+    let questionContent: ChatMessage["content"];
+    if (typeof question === 'string') {
+      questionContent = question;
+    } else {
+      const firstPart = question[0];
+      const secondPart = question[1];
+      if (secondPart.type === "image_url") {
+        questionContent = [firstPart, { type: "image_url", image_url: { url: secondPart.image_url.url } }];
+      } else if (secondPart.type === "file_url") {
+        questionContent = [firstPart, { type: "file_url", file_url: { url: secondPart.file_url.url, name: secondPart.file_url.name } }];
+      } else {
+        // Fallback or error handling if needed, though current types restrict to image_url or file_url
+        questionContent = firstPart.text; 
+      }
+    }
+    const questionText = typeof question === 'string' ? question : question[0]?.text || "";
+
 
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
-      content: questionContent as string,
+      content: questionContent,
       date: new Date().toISOString()
     }
 
@@ -311,13 +326,29 @@ const Chat = () => {
     setShowLoadingMessage(true)
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
-    const questionContent = typeof question === 'string' ? question : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
-    question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
+
+    let questionContentWithFile: ChatMessage["content"];
+    if (typeof question === 'string') {
+      questionContentWithFile = question;
+    } else {
+      const firstPart = question[0];
+      const secondPart = question[1];
+      if (secondPart.type === "image_url") {
+        questionContentWithFile = [firstPart, { type: "image_url", image_url: { url: secondPart.image_url.url } }];
+      } else if (secondPart.type === "file_url") {
+        questionContentWithFile = [firstPart, { type: "file_url", file_url: { url: secondPart.file_url.url, name: secondPart.file_url.name } }];
+      } else {
+        // Fallback or error handling if needed
+        questionContentWithFile = firstPart.text;
+      }
+    }
+    const questionTextOnly = typeof question === 'string' ? question : question[0]?.text || "";
+
 
     const userMessage: ChatMessage = {
       id: uuid(),
       role: 'user',
-      content: questionContent as string,
+      content: questionContentWithFile,
       date: new Date().toISOString()
     }
 
@@ -802,7 +833,25 @@ const Chat = () => {
                     {answer.role === 'user' ? (
                       <div className={styles.chatMessageUser} tabIndex={0}>
                         <div className={styles.chatMessageUserMessage}>
-                          {typeof answer.content === "string" && answer.content ? answer.content : Array.isArray(answer.content) ? <>{answer.content[0].text} <img className={styles.uploadedImageChat} src={answer.content[1].image_url.url} alt="Uploaded Preview" /></> : null}
+                          {typeof answer.content === "string" && answer.content ? (
+                            answer.content
+                          ) : Array.isArray(answer.content) ? (
+                            <>
+                              {answer.content[0].text}
+                              {answer.content[1].type === "image_url" && (
+                                <img
+                                  className={styles.uploadedImageChat}
+                                  src={answer.content[1].image_url.url}
+                                  alt="Uploaded Preview"
+                                />
+                              )}
+                              {answer.content[1].type === "file_url" && (
+                                <div className={styles.uploadedFileChat}>
+                                  Attached file: {answer.content[1].file_url.name}
+                                </div>
+                              )}
+                            </>
+                          ) : null}
                         </div>
                       </div>
                     ) : answer.role === 'assistant' ? (
