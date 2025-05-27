@@ -194,7 +194,9 @@ const Chat = () => {
       if (secondPart.type === "image_url") {
         questionContent = [firstPart, { type: "image_url", image_url: { url: secondPart.image_url.url } }];
       } else if (secondPart.type === "file") {
-        questionContent = [firstPart, { type: "file", file: { url: (secondPart as any).file.url, name: (secondPart as any).file.name } }];
+        // Ensure correct propagation of file_id and name
+        const fileData = secondPart.file; // secondPart is of type ChatMessageContentParts
+        questionContent = [firstPart, { type: "file", file: { file_id: fileData.file_id, name: fileData.name } }];
       } else {
         // Fallback or error handling if needed, though current types restrict to image_url or file
         questionContent = firstPart.text; 
@@ -336,7 +338,9 @@ const Chat = () => {
       if (secondPart.type === "image_url") {
         questionContentWithFile = [firstPart, { type: "image_url", image_url: { url: secondPart.image_url.url } }];
       } else if (secondPart.type === "file") {
-        questionContentWithFile = [firstPart, { type: "file", file: { url: (secondPart as any).file.url, name: (secondPart as any).file.name } }];
+        // Ensure correct propagation of file_id and name
+        const fileData = secondPart.file; // secondPart is of type ChatMessageContentParts
+        questionContentWithFile = [firstPart, { type: "file", file: { file_id: fileData.file_id, name: fileData.name } }];
       } else {
         // Fallback or error handling if needed
         questionContentWithFile = firstPart.text;
