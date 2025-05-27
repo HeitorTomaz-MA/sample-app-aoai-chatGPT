@@ -139,6 +139,7 @@ export type FrontendSettings = {
   ui?: UI
   sanitize_answer?: boolean
   oyd_enabled?: boolean
+  allowed_file_extensions?: string;
 }
 
 export enum Feedback {
