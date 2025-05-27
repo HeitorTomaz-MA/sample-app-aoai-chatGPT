@@ -40,7 +40,13 @@ export type AzureSqlServerExecResults = {
 export type ChatMessage = {
   id: string
   role: string
-  content: string | [{ type: string; text: string }, { type: string; image_url: { url: string } }]
+  content: string | [
+    { type: "text"; text: string },
+    (
+      | { type: "image_url"; image_url: { url: string } }
+      | { type: "file_url"; file_url: { url: string; name: string } }
+    )
+  ]
   end_turn?: boolean
   date: string
   feedback?: Feedback
