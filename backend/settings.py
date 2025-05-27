@@ -761,6 +761,7 @@ class _BaseSettings(BaseSettings):
     auth_enabled: bool = True
     sanitize_answer: bool = False
     use_promptflow: bool = False
+    allowed_file_extensions: str = ".png,.jpg,.jpeg,.gif,.bmp,.tiff,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
 
 
 class _AppSettings(BaseModel):

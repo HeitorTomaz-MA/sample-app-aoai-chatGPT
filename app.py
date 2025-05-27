@@ -104,6 +104,7 @@ frontend_settings = {
     },
     "sanitize_answer": app_settings.base_settings.sanitize_answer,
     "oyd_enabled": app_settings.base_settings.datasource_type,
+    "allowed_file_extensions": app_settings.base_settings.allowed_file_extensions,
 }
 
 
@@ -253,12 +254,16 @@ def prepare_model_args(request_body, request_headers):
         if message:
             match message["role"]:
                 case "user":
-                    messages.append(
-                        {
-                            "role": message["role"],
-                            "content": message["content"]
-                        }
-                    )
+                    content = message["content"]
+                    if isinstance(content, list):
+                        messages.append({"role": "user", "content": content})
+                    else:
+                        messages.append(
+                            {
+                                "role": "user",
+                                "content": [{"type": "text", "text": content}],
+                            }
+                        )
                 case "assistant" | "function" | "tool":
                     messages_helper = {}
                     messages_helper["role"] = message["role"]
@@ -560,6 +565,7 @@ async def stream_chat_request(request_body, request_headers):
 
 
 async def conversation_internal(request_body, request_headers):
+    logging.debug(f"Received messages for /conversation: {request_body.get('messages')}")
     try:
         if app_settings.azure_openai.stream and not app_settings.base_settings.use_promptflow:
             result = await stream_chat_request(request_body, request_headers)
