@@ -7,7 +7,6 @@ import Send from '../../assets/Send.svg'
 import styles from './QuestionInput.module.css'
 import { ChatMessage } from '../../api'
 import { AppStateContext } from '../../state/AppProvider'
-import { resizeImage } from '../../utils/resizeImage'
 
 interface Props {
   onSend: (question: ChatMessage['content'], id?: string) => void
@@ -19,23 +18,39 @@ interface Props {
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conversationId }: Props) => {
   const [question, setQuestion] = useState<string>('')
-  const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [base64File, setBase64File] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
 
   const appStateContext = useContext(AppStateContext)
   const OYD_ENABLED = appStateContext?.state.frontendSettings?.oyd_enabled || false;
+  const allowedFileExtensions = appStateContext?.state.frontendSettings?.allowed_file_extensions || "";
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (file) {
+      const fileExtension = "." + file.name.split('.').pop()?.toLowerCase();
+      const allowedExtensions = allowedFileExtensions.split(',');
+
+      if (!allowedExtensions.includes(fileExtension)) {
+        alert(`File type not allowed. Please upload one of the following file types: ${allowedFileExtensions}`);
+        // Clear the file input
+        event.target.value = "";
+        return;
+      }
+
+      setFileName(file.name);
       await convertToBase64(file);
     }
   };
 
   const convertToBase64 = async (file: Blob) => {
     try {
-      const resizedBase64 = await resizeImage(file, 800, 800);
-      setBase64Image(resizedBase64);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBase64File(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -46,14 +61,16 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       return
     }
 
-    const questionTest: ChatMessage["content"] = base64Image ? [{ type: "text", text: question }, { type: "image_url", image_url: { url: base64Image } }] : question.toString();
+    const questionTest: ChatMessage["content"] = base64File && fileName ? [{ type: "text", text: question }, { type: "file_url", file_url: { url: base64File, name: fileName } }] : question.toString();
 
     if (conversationId && questionTest !== undefined) {
       onSend(questionTest, conversationId)
-      setBase64Image(null)
+      setBase64File(null)
+      setFileName(null)
     } else {
       onSend(questionTest)
-      setBase64Image(null)
+      setBase64File(null)
+      setFileName(null)
     }
 
     if (clearOnSend) {
@@ -91,19 +108,19 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
           <input
             type="file"
             id="fileInput"
-            onChange={(event) => handleImageUpload(event)}
-            accept="image/*"
+            onChange={(event) => handleFileUpload(event)}
+            accept={allowedFileExtensions}
             className={styles.fileInput}
           />
-          <label htmlFor="fileInput" className={styles.fileLabel} aria-label='Upload Image'>
+          <label htmlFor="fileInput" className={styles.fileLabel} aria-label='Upload File'>
             <FontIcon
               className={styles.fileIcon}
               iconName={'PhotoCollection'}
-              aria-label='Upload Image'
+              aria-label='Upload File'
             />
           </label>
         </div>)}
-      {base64Image && <img className={styles.uploadedImage} src={base64Image} alt="Uploaded Preview" />}
+      {fileName && <p className={styles.uploadedFile}>{fileName}</p>}
       <div
         className={styles.questionInputSendButtonContainer}
         role="button"
