@@ -65,7 +65,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend, conv
       return
     }
 
-    let fileContentPart: { type: "image_url"; image_url: { url: string } } | { type: "file_url"; file_url: { url: string; name: string } } | null = null;
+    let fileContentPart: { type: "image_url"; image_url: { url: string } } | { type: "file"; file: { url: string; name: string } } | null = null;
 
     if (base64File && selectedFile && fileName) { // Ensure selectedFile and fileName are also checked
       if (selectedFile.type.startsWith('image/')) {
